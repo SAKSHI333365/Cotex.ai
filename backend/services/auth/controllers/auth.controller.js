@@ -57,3 +57,28 @@ export const login = async (req, res) => {
         return res.status(503).json({ message: "Login service is temporarily unavailable" });
     }
 };
+
+export const logout = async (req, res) => {
+    try {
+        const sessionCookie = req.headers.cookie
+            ?.split(";")
+            .map((cookie) => cookie.trim())
+            .find((cookie) => cookie.startsWith("session="));
+        const sessionId = sessionCookie?.slice("session=".length);
+
+        if (sessionId) {
+            await createConnection().del(`session:${sessionId}`);
+        }
+
+        const secureCookie = process.env.NODE_ENV === "production";
+        res.clearCookie("session", {
+            secure: secureCookie,
+            httpOnly: true,
+            sameSite: secureCookie ? "none" : "lax"
+        });
+        return res.status(200).json({ message: "Logout successful" });
+    } catch (error) {
+        console.error("Logout failed:", error.message);
+        return res.status(503).json({ message: "Logout service is temporarily unavailable" });
+    }
+};
