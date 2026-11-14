@@ -13,23 +13,29 @@ dotenv.config({ path: fileURLToPath(new URL("./.env", import.meta.url)) });
 const port = process.env.PORT || 8000;
 const authServiceUrl = process.env.AUTH_SERVICE_URL;
 const chatServiceUrl = process.env.CHAT_SERVICE_URL || process.env.CHAT_SERVICES;
+const agentServiceUrl = process.env.AGENT_SERVICE_URL;
 
 if (!authServiceUrl) {
     throw new Error("AUTH_SERVICE_URL is not set");
-}
-if (!chatServiceUrl) {
-    throw new Error("CHAT_SERVICE_URL is not set");
 }
 
 const app = express();
 app.use(cors({
     origin: process.env.FRONTEND_URL,
-    credentials: true
+    credentials: true,
 }));
 app.use(cookieParser());
 
 app.use("/auth", proxy(authServiceUrl));
-app.use("/chat", protect, proxyWithHeader(chatServiceUrl));
+
+if (chatServiceUrl) {
+    app.use("/chat", protect, proxyWithHeader(chatServiceUrl));
+}
+
+if (agentServiceUrl) {
+    app.use("/agent", protect, proxyWithHeader(agentServiceUrl));
+}
+
 app.get("/me", protect, getCurrentUser);
 
 app.get("/", (req, res) => {
